@@ -1,0 +1,1148 @@
+<template>
+  <div>
+    <div :class="['model',isShowNumberKeyboard||isShowNumberKeyboardPoint? 'move-top':'']" v-if="title_type==1">
+      <div class="step-name">
+        {{$t("language.step")}}:
+        <input @focus="onfocus('name',wash.step_name,$event)" class="input-step-name" v-model="wash.step_name"
+          @blur="saveData()" @input="wash.step_name=wash.step_name.replace(/[^\w\u4E00-\u9FA5_-]/g,'')" />
+      </div>
+      <div class="step-name">
+        {{$t("language.well1c")}}:
+        <div class="select-well" @click.stop="is_arraw()" ref="well1">
+          {{wash.well}}<img src="../images/protocols/down-prto.png" class="arraw-well" />
+        </div>
+        <div class="select-list" v-if="arraw_status">
+          <div class="arrawclass" @click="selectWell(1)">1</div>
+          <div class="arrawclass" @click="selectWell(2)">2</div>
+          <div class="arrawclass" @click="selectWell(3)">3</div>
+          <div class="arrawclass" @click="selectWell(4)">4</div>
+          <div class="arrawclass" @click="selectWell(5)">5</div>
+          <div class="arrawclass" @click="selectWell(6)">6</div>
+          <div class="arrawclass" @click="selectWell(7)">7</div>
+          <div class="arrawclass" @click="selectWell(8)">8</div>
+          <div class="arrawclass" @click="selectWell(9)" v-if="$store.getters.protocol.cartridge!=15">9</div>
+          <div class="arrawclass" @click="selectWell(10)" v-if="$store.getters.protocol.cartridge!=15">10</div>
+          <div class="arrawclass" @click="selectWell(11)" v-if="$store.getters.protocol.cartridge==2">11</div>
+          <div class="arrawclass" @click="selectWell(12)" v-if="$store.getters.protocol.cartridge==2">12</div>
+          <div class="arrawclass" @click="selectWell('A')">A</div>
+          <div class="arrawclass" @click="selectWell('B')">B</div>
+          <div class="arrawclass" @click="selectWell('C')">C</div>
+        </div>
+      </div>
+      <div class="step-name">
+        <span>{{$t("language.labware")}}:</span>
+        <div class="select-well" @click.stop="is_arraw_first()" ref="well1">
+          {{wash.basic_labware}}<img src="../images/protocols/down-prto.png" class="arraw-well" />
+        </div>
+        <div class="select-first" v-if="arraw_first_status">
+          <div class="arrawclass" @click="selectlabware(0)">{{$t("language.d_tip")}}</div>
+          <div class="arrawclass" @click="selectlabware(1)" v-if="$store.getters.protocol.well_e==1">
+            {{$t("language.e_tip")}}
+          </div>
+          <div class="arrawclass" @click="selectlabware(2)" v-if="$store.getters.protocol.well_e==2">
+            {{$t("language.e_sleeve")}}
+          </div>
+        </div>
+      </div>
+      <div class="step-name">
+        <span
+          v-if="(wash.well==1||wash.well==2)&&$store.getters.protocol.cartridge==2">{{$t("language.volume")}}(5-2000μl):</span>
+        <span
+          v-else-if="wash.well>=3&&wash.well<=10&&$store.getters.protocol.cartridge==2">{{$t("language.volume")}}(5-1000μl):</span>
+        <span
+          v-else-if="(wash.well==11||wash.well==12)&&$store.getters.protocol.cartridge==2">{{$t("language.volume")}}(5-200μl):</span>
+
+        <span v-else-if="wash.well==1&&$store.getters.protocol.cartridge==8">{{$t("language.volume")}}(5-8000μl):</span>
+        <span
+          v-else-if="wash.well>=2&&wash.well<=9&&$store.getters.protocol.cartridge==8">{{$t("language.volume")}}(5-1000μl):</span>
+        <span v-else-if="wash.well==10&&$store.getters.protocol.cartridge==8">{{$t("language.volume")}}(5-200μl):</span>
+
+        <span
+          v-else-if="wash.well==1&&$store.getters.protocol.cartridge==15">{{$t("language.volume")}}(5-15000μl):</span>
+        <span
+          v-else-if="wash.well>=2&&wash.well<=7&&$store.getters.protocol.cartridge==15">{{$t("language.volume")}}(5-1000μl):</span>
+        <span v-else-if="wash.well==8&&$store.getters.protocol.cartridge==15">{{$t("language.volume")}}(5-200μl):</span>
+
+        <span v-else-if="wash.well=='A'">{{$t("language.volume")}}(5-10000μl):</span>
+        <span v-else-if="wash.well=='B'||wash.well=='C'">{{$t("language.volume")}}(5-1000μl):</span>
+        <input @focus="onfocus('num',wash.volume,$event)" class="input-step-name" v-model="wash.volume"
+          @blur="saveData()" @input="wash.volume = wash.volume.replace(/[^[0-9]\d*$/g, '')" />
+      </div>
+      <div v-if="$store.getters.protocol.steps[order-1].basic_labware==2">
+        <div class="step-name">
+          {{$t("language.mix_time")}}(1-999s):
+          <input @focus="onfocus('point',wash.mix_time,$event)" class="input-step-name" v-model="wash.mix_time"
+            @blur="saveData()" onKeypress="return(/[\d.]/.test(String.fromCharCode(event.keyCode)))"
+            @input="wash.mix_time = wash.mix_time.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.mix_speed")}}(1-10Hz):
+          <input @focus="onfocus('num',wash.mix_speed,$event)" class="input-step-name" v-model="wash.mix_speed"
+            @blur="saveData()" @input="wash.mix_speed = wash.mix_speed.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.mix_position")}}(0-20mm):
+          <input @focus="onfocus('num',wash.mix_position,$event)" class="input-step-name" v-model="wash.mix_position"
+            @blur="saveData()" @input="wash.mix_position = wash.mix_position.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          <span
+            v-if="(wash.well==1||wash.well==2)&&$store.getters.protocol.cartridge==2">{{$t("language.mix_volume")}}(5-1000μl):</span>
+          <span
+            v-else-if="wash.well>=3&&wash.well<=10&&$store.getters.protocol.cartridge==2">{{$t("language.mix_volume")}}(5-600μl):</span>
+          <span
+            v-else-if="(wash.well==11||wash.well==12)&&$store.getters.protocol.cartridge==2">{{$t("language.mix_volume")}}(5-120μl):</span>
+
+          <span
+            v-else-if="wash.well==1&&$store.getters.protocol.cartridge==8">{{$t("language.mix_volume")}}(5-1000μl):</span>
+          <span
+            v-else-if="wash.well>=2&&wash.well<=9&&$store.getters.protocol.cartridge==8">{{$t("language.mix_volume")}}(5-600μl):</span>
+          <span
+            v-else-if="wash.well==10&&$store.getters.protocol.cartridge==8">{{$t("language.mix_volume")}}(5-120μl):</span>
+
+          <span
+            v-else-if="wash.well==1&&$store.getters.protocol.cartridge==15">{{$t("language.mix_volume")}}(5-1000μl):</span>
+          <span
+            v-else-if="wash.well>=2&&wash.well<=7&&$store.getters.protocol.cartridge==15">{{$t("language.mix_volume")}}(5-600μl):</span>
+          <span
+            v-else-if="wash.well==8&&$store.getters.protocol.cartridge==15">{{$t("language.mix_volume")}}(5-120μl):</span>
+
+          <span v-else-if="wash.well=='A'">{{$t("language.mix_volume")}}(5-1000μl):</span>
+          <span v-else-if="wash.well=='B'||wash.well=='C'">{{$t("language.mix_volume")}}(5-600μl):</span>
+          <input @focus="onfocus('num',wash.mix_volume,$event)" class="input-step-name" v-model="wash.mix_volume"
+            @blur="saveData()" @input="wash.mix_volume = wash.mix_volume.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+      </div>
+      <div v-else>
+        <div class="step-name">
+          {{$t("language.segments")}}(1-5):
+          <div class="select-well" @click.stop="isMixSegment()" ref="well1">
+            {{wash.mix_segments}}<img src="../images/protocols/down-prto.png" class="arraw-well" />
+          </div>
+          <div class="select-list-segments" v-if="mix_segments_status">
+            <div class="arrawclass" @click="selectMixSegments('1')">1</div>
+            <div class="arrawclass" @click="selectMixSegments('2')">2</div>
+            <div class="arrawclass" @click="selectMixSegments('3')">3</div>
+            <div class="arrawclass" @click="selectMixSegments('4')">4</div>
+            <div class="arrawclass" @click="selectMixSegments('5')">5</div>
+          </div>
+        </div>
+        <div class="step-name">
+          {{$t("language.every_mix_times")}}(1-999):
+          <input @focus="onfocus('num',wash.every_mix_times,$event)" class="input-step-name"
+            v-model="wash.every_mix_times" @blur="saveData()"
+            @input="wash.every_mix_times = wash.every_mix_times.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.mix_type")}}:
+          <div class="select-well" @click.stop="isMixType()" ref="well1">
+            {{wash.mix_type}}<img src="../images/protocols/down-prto.png" class="arraw-well" />
+          </div>
+          <div class="select-mix-type" v-if="mix_status">
+            <div class="arrawclass" @click="selectMixType(0)">{{$t("language.top_bottom")}}</div>
+            <div class="arrawclass" @click="selectMixType(1)">{{$t("language.bottom_top")}}</div>
+          </div>
+        </div>
+        <div class="step-name">
+          <span
+            v-if="(wash.well==1||wash.well==2)&&$store.getters.protocol.cartridge==2">{{$t("language.mix_volume")}}(5-1000μl):</span>
+          <span
+            v-else-if="wash.well>=3&&wash.well<=10&&$store.getters.protocol.cartridge==2">{{$t("language.mix_volume")}}(5-600μl):</span>
+          <span
+            v-else-if="(wash.well==11||wash.well==12)&&$store.getters.protocol.cartridge==2">{{$t("language.mix_volume")}}(5-120μl):</span>
+
+          <span
+            v-else-if="wash.well==1&&$store.getters.protocol.cartridge==8">{{$t("language.mix_volume")}}(5-1000μl):</span>
+          <span
+            v-else-if="wash.well>=2&&wash.well<=9&&$store.getters.protocol.cartridge==8">{{$t("language.mix_volume")}}(5-600μl):</span>
+          <span
+            v-else-if="wash.well==10&&$store.getters.protocol.cartridge==8">{{$t("language.mix_volume")}}(5-120μl):</span>
+
+          <span
+            v-else-if="wash.well==1&&$store.getters.protocol.cartridge==15">{{$t("language.mix_volume")}}(5-1000μl):</span>
+          <span
+            v-else-if="wash.well>=2&&wash.well<=7&&$store.getters.protocol.cartridge==15">{{$t("language.mix_volume")}}(5-600μl):</span>
+          <span
+            v-else-if="wash.well==8&&$store.getters.protocol.cartridge==15">{{$t("language.mix_volume")}}(5-120μl):</span>
+
+          <span v-else-if="wash.well=='A'">{{$t("language.mix_volume")}}(5-1000μl):</span>
+          <span v-else-if="wash.well=='B'||wash.well=='C'">{{$t("language.mix_volume")}}(5-600μl):</span>
+          <input @focus="onfocus('num',wash.mix_volume,$event)" class="input-step-name" v-model="wash.mix_volume"
+            @blur="saveData()" @input="wash.mix_volume = wash.mix_volume.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.mix_speed")}}(1%-150%):
+          <input @focus="onfocus('num',wash.mix_speed,$event)" class="input-step-name" v-model="wash.mix_speed"
+            @blur="saveData()" @input="wash.mix_speed = wash.mix_speed.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name" v-if="($store.getters.protocol.cartridge==8||$store.getters.protocol.cartridge==15)&&wash.well==1">
+          {{$t("language.mix_moving_speed")}}(1%-150%):
+          <input @focus="onfocus('num',wash.mix_moving_speed,$event)" class="input-step-name"
+            v-model="wash.mix_moving_speed" @blur="saveData()"
+            @input="wash.mix_moving_speed = wash.mix_moving_speed.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+      </div>
+    </div>
+    <div v-else-if="title_type==2" :class="['model',isShowNumberKeyboard||isShowNumberKeyboardPoint? 'move-top':'']">
+      <div class="step-name" style="margin-bottom: 10px;">
+        {{$t("language.magnet")}} :
+        <span class="switch">
+          <el-switch active-color="#13ce66" inactive-color="#DCDFE6" :width="66" @change="saveData()"
+            v-model="magnet_on">
+          </el-switch>
+        </span>
+      </div>
+      <div class="step-name">
+        <span>{{$t("language.labware")}}:</span>
+        <div class="select-well" @click.stop="isMagnetLabware()" ref="well1">
+          {{wash.magnet_labware}}<img src="../images/protocols/down-prto.png" class="arraw-well" />
+        </div>
+        <div class="select-first" v-if="magnet_labware_status">
+          <div class="arrawclass" @click="selectMagnetlabware(0)">{{$t("language.d_tip")}}</div>
+          <div class="arrawclass" @click="selectMagnetlabware(1)" v-if="$store.getters.protocol.well_e==1">
+            {{$t("language.e_tip")}}
+          </div>
+          <div class="arrawclass" @click="selectMagnetlabware(2)" v-if="$store.getters.protocol.well_e==2">
+            {{$t("language.e_sleeve")}}
+          </div>
+        </div>
+      </div>
+      <div class="step-name">
+        {{$t("language.segments")}}(1-5):
+        <div class="select-well" @click.stop="is_Segment()" ref="well1">
+          {{wash.segments}}<img src="../images/protocols/down-prto.png" class="arraw-well" />
+        </div>
+        <div class="select-list-segments" v-if="segments_status">
+          <div class="arrawclass" @click="selectSegments('1')">1</div>
+          <div class="arrawclass" @click="selectSegments('2')">2</div>
+          <div class="arrawclass" @click="selectSegments('3')">3</div>
+          <div class="arrawclass" @click="selectSegments('4')">4</div>
+          <div class="arrawclass" @click="selectSegments('5')">5</div>
+        </div>
+      </div>
+      <div v-if="$store.getters.protocol.steps[order-1].magnet_labware==2">
+        <div class="step-name">
+          {{$t("language.every_magnetic_times")}}:
+          <input @focus="onfocus('num',wash.every_magnetic_times,$event)" class="input-step-name"
+            v-model="wash.every_magnetic_times" @blur="saveData()"
+            @input="wash.every_magnetic_times = wash.every_magnetic_times.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.liquid_level_magnetic_times")}}(0-10):
+          <input @focus="onfocus('num',wash.liquid_level_magnetic_times,$event)" class="input-step-name"
+            v-model="wash.liquid_level_magnetic_times" @blur="saveData()"
+            @input="wash.liquid_level_magnetic_times = wash.liquid_level_magnetic_times.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.cycle_1_99")}}:
+          <input @focus="onfocus('num',wash.cycle,$event)" class="input-step-name" v-model="wash.cycle"
+            @blur="saveData()" @input="wash.cycle = wash.cycle.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.magnet_speed")}}:
+          <input @focus="onfocus('num',wash.magnetic_speed,$event)" class="input-step-name"
+            v-model="wash.magnetic_speed" @blur="saveData()"
+            @input="wash.magnetic_speed = wash.magnetic_speed.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.lowest_magnetic_position")}}:
+          <input @focus="onfocusTemp('num',wash.lowest_magnetic_position,$event)" class="input-step-name"
+            v-model="wash.lowest_magnetic_position" @blur="saveData()"
+            @input="wash.lowest_magnetic_position = wash.lowest_magnetic_position.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+      </div>
+      <div v-else>
+        <div class="step-name">
+          {{$t("language.interval_stay")}}:
+          <input @focus="onfocus('num',wash.interval_stay_time,$event)" class="input-step-name"
+            v-model="wash.interval_stay_time" @blur="saveData()"
+            @input="wash.interval_stay_time = wash.interval_stay_time.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.cycle_1_99")}}:
+          <input @focus="onfocus('num',wash.cycle,$event)" class="input-step-name" v-model="wash.cycle"
+            @blur="saveData()" @input="wash.cycle = wash.cycle.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.aspirate_speed")}}(1%-150%):
+          <input @focus="onfocus('num',wash.aspirate_speed,$event)" class="input-step-name"
+            v-model="wash.aspirate_speed" @blur="saveData()"
+            @input="wash.aspirate_speed = wash.aspirate_speed.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+        <div class="step-name">
+          {{$t("language.magnetic_speed")}}(1%-150%):
+          <input @focus="onfocus('num',wash.magnetic_speed,$event)" class="input-step-name"
+            v-model="wash.magnetic_speed" @blur="saveData()"
+            @input="wash.magnetic_speed = wash.magnetic_speed.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+      </div>
+      <div class="step-name" style="margin-bottom: 10px;">
+        {{$t("language.drying")}} :
+        <span class="switch">
+          <el-switch active-color="#13ce66" inactive-color="#DCDFE6" :width="66" @change="saveData()"
+            v-model="wash.drying_on">
+          </el-switch>
+        </span>
+      </div>
+      <div v-if="wash.drying_on" style="margin-left: 20px;">
+        <div class="step-name">
+          {{$t("language.dry_time")}}:
+          <input @focus="onfocusTemp('num',wash.drying_time,$event)" class="input-step-name" v-model="wash.drying_time"
+            @blur="saveData()" onKeypress="return(/[\d.]/.test(String.fromCharCode(event.keyCode)))" />
+        </div>
+        <div class="step-name">
+          {{$t("language.dry_position")}}:
+          <div class="select-well" @click.stop="isDryPosition()" ref="well1">
+            {{wash.drying_position}}<img src="../images/protocols/down-prto.png" class="arraw-well" />
+          </div>
+          <div class="select-mix-type" v-if="position_status">
+            <div class="arrawclass" @click="selectDryPosition(0)">{{$t("language.tube_inside")}}</div>
+            <div class="arrawclass" @click="selectDryPosition(1)">{{$t("language.tube_outside")}}</div>
+          </div>
+        </div>
+        <div class="step-name" v-if="$store.getters.protocol.steps[order-1].magnet_labware!=2">
+          {{$t("language.drying_volume")}}(5-1000μl):
+          <input @focus="onfocus('num',wash.drying_volume,$event)" class="input-step-name" @blur="saveData()"
+            v-model="wash.drying_volume" @input="wash.drying_volume = wash.drying_volume.replace(/[^[0-9]\d*$/g, '')" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 全键盘 -->
+    <SimpleKeyboard class="searchKeyboard" v-if="isShowKeyboard" :input="input" @onChange="onChange"
+      @onKeyPress="onKeyPress" @colseKeyboard="colseKeyboard('name')" @mousedown.native="$event.preventDefault();" />
+    <!-- 数字键盘 -->
+    <!-- 不可输入小数点 -->
+    <NumberKeyboard class="searchKeyboardNumber" v-if="isShowNumberKeyboard" :input="input" @onChange="onChangeNum"
+      @onKeyPress="onKeyPressNum" @colseKeyboard="colseKeyboard('num')" @mousedown.native="$event.preventDefault();" />
+    <!-- 可输入小数点 -->
+    <NumberKeyboard class="searchKeyboardNumber" v-if="isShowNumberKeyboardPoint" :input="input"
+      @onChange="onChangeNumPoint" @onKeyPress="onKeyPressNum" @colseKeyboard="colseKeyboard('num')"
+      @mousedown.native="$event.preventDefault();" />
+  </div>
+</template>
+
+<script>
+  import SimpleKeyboard from "@/components/SimpleKeyboard";
+  import NumberKeyboard from "@/components/NumberKeyboard.vue";
+  import MixinNumAndKeyboard from "@/mixins/numAndKeyboard.js";
+  export default {
+    props: ['order', 'title_type'],
+    components: {
+      SimpleKeyboard,
+      NumberKeyboard
+    },
+    mixins: [MixinNumAndKeyboard],
+    data() {
+      return {
+        arraw_status: false,
+        wash: {},
+        magnet_status: false,
+        segments_status: false,
+        magnet_type: null,
+        temperature_on: null,
+        magnet_on: null,
+        heat_stauts: false,
+        arraw_first_status: false,
+        mix_segments_status: false,
+        magnet_labware_status: false,
+        mix_status: false,
+        position_status: false
+      }
+    },
+    watch: {
+      'order': {
+        immediate: true,
+        handler(newval, oldval) {
+          this.getData()
+        }
+      }
+    },
+    mounted() {
+      this.getData()
+      if (this.$refs.well1) {
+        document.addEventListener('click', this.closeClick);
+      }
+    },
+    methods: {
+      closeClick(event) {
+        if (this.$refs.well1) {
+          if (!this.$refs.well1.contains(event.target)) {
+            this.arraw_status = false;
+            this.segments_status = false;
+            this.magnet_status = false;
+            this.arraw_first_status = false
+            this.mix_segments_status = false
+            this.magnet_labware_status = false
+            this.mix_status = false
+          }
+        }
+      },
+      is_arraw() {
+        this.arraw_status = !this.arraw_status
+        this.segments_status = false;
+        this.magnet_status = false;
+        this.arraw_first_status = false
+        this.mix_segments_status = false
+        this.magnet_labware_status = false
+        this.mix_status = false
+      },
+      selectWell(type) {
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        this.wash.well = type
+        protocol.steps[this.order - 1].well = type
+        this.$store.commit('setProtocol', protocol)
+        this.saveData()
+        this.arraw_status = false
+      },
+      getData() {
+        this.wash = JSON.parse(JSON.stringify(this.$store.getters.protocol.steps[this.order - 1]))
+        this.wash.temperature = Number(this.wash.temperature).toFixed(1)
+        this.wash.drying_on = this.wash.drying_on == 1 ? true : false
+        if (this.wash.magnet_type == 'tip') {
+          this.magnet_type = this.$t("language.tip")
+        } else if (this.wash.magnet_type == 'sleeve') {
+          this.magnet_type = this.$t("language.sleeve")
+        }
+        if (this.wash.temperature_on == 1) {
+          this.temperature_on = true
+        } else if (this.wash.magnet_type == 0) {
+          this.temperature_on = false
+        }
+        if (this.wash.magnet_on == 1) {
+          this.magnet_on = true
+        } else if (this.wash.magnet_on == 0) {
+          this.magnet_on = false
+        }
+        if (this.wash.pre_heating_seconds != 0) {
+          this.heat_stauts = true
+        } else {
+          this.heat_stauts = false
+        }
+        if (this.wash.basic_labware == 0) {
+          this.wash.basic_labware = this.$t("language.d_tip")
+        } else if (this.wash.basic_labware == 1) {
+          this.wash.basic_labware = this.$t("language.e_tip")
+        } else if (this.wash.basic_labware == 2) {
+          this.wash.basic_labware = this.$t("language.e_sleeve")
+        }
+        if (this.wash.magnet_labware == 0) {
+          this.wash.magnet_labware = this.$t("language.d_tip")
+        } else if (this.wash.magnet_labware == 1) {
+          this.wash.magnet_labware = this.$t("language.e_tip")
+        } else if (this.wash.magnet_labware == 2) {
+          this.wash.magnet_labware = this.$t("language.e_sleeve")
+        }
+        if (this.wash.mix_type == 0) {
+          this.wash.mix_type = this.$t("language.top_bottom")
+        } else if (this.wash.mix_type == 1) {
+          this.wash.mix_type = this.$t("language.bottom_top")
+        }
+        if (this.wash.drying_position == 0) {
+          this.wash.drying_position = this.$t("language.tube_inside")
+        } else if (this.wash.drying_position == 1) {
+          this.wash.drying_position = this.$t("language.tube_outside")
+        }
+      },
+      saveData(type) {
+        //volume
+        if (this.wash.volume < 5) {
+          this.wash.volume = 5
+        }
+        if (this.wash.mix_volume < 5) {
+          this.wash.mix_volume = 5
+        }
+        if ((this.wash.well == 1 || this.wash.well == 2) && this.$store.getters.protocol.cartridge == 2) {
+          //volume
+          if (this.wash.volume > 2000) {
+            this.wash.volume = 2000
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 1000) {
+            this.wash.mix_volume = 1000
+          }
+        } else if (this.wash.well >= 3 && this.wash.well <= 10 && this.$store.getters.protocol.cartridge == 2) {
+          //volume
+          if (this.wash.volume > 1000) {
+            this.wash.volume = 1000
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 600) {
+            this.wash.mix_volume = 600
+          }
+        } else if (this.wash.well == 12 && this.wash.well == 11 && this.$store.getters.protocol.cartridge == 2) {
+          //volume
+          if (this.wash.volume > 200) {
+            this.wash.volume = 200
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 120) {
+            this.wash.mix_volume = 120
+          }
+        } else if (this.wash.well == 1 && this.$store.getters.protocol.cartridge == 8) {
+          //volume
+          if (this.wash.volume > 8000) {
+            this.wash.volume = 8000
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 1000) {
+            this.wash.mix_volume = 1000
+          }
+        } else if (this.wash.well >= 2 && this.wash.well <= 9 && this.$store.getters.protocol.cartridge == 8) {
+          //volume
+          if (this.wash.volume > 1000) {
+            this.wash.volume = 1000
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 600) {
+            this.wash.mix_volume = 600
+          }
+        } else if (this.wash.well == 10 && this.$store.getters.protocol.cartridge == 8) {
+          //volume
+          if (this.wash.volume > 200) {
+            this.wash.volume = 200
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 120) {
+            this.wash.mix_volume = 120
+          }
+        } else if (this.wash.well == 1 && this.$store.getters.protocol.cartridge == 12) {
+          //volume
+          if (this.wash.volume > 15000) {
+            this.wash.volume = 15000
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 1000) {
+            this.wash.mix_volume = 1000
+          }
+        } else if (this.wash.well >= 2 && this.wash.well <= 7 && this.$store.getters.protocol.cartridge == 12) {
+          //volume
+          if (this.wash.volume > 1000) {
+            this.wash.volume = 1000
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 600) {
+            this.wash.mix_volume = 600
+          }
+        } else if (this.wash.well == 8 && this.$store.getters.protocol.cartridge == 12) {
+          //volume
+          if (this.wash.volume > 200) {
+            this.wash.volume = 200
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 120) {
+            this.wash.mix_volume = 120
+          }
+        } else if (this.wash.well == 'A') {
+          //volume
+          if (this.wash.volume > 10000) {
+            this.wash.volume = 10000
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 1000) {
+            this.wash.mix_volume = 1000
+          }
+        } else if (this.wash.well == 'B' || this.wash.well == 'C') {
+          //volume
+          if (this.wash.volume > 1000) {
+            this.wash.volume = 1000
+          }
+          //mix_volume
+          if (this.wash.mix_volume > 600) {
+            this.wash.mix_volume = 600
+          }
+        }
+        //mixtime
+        if (this.wash.mix_time > 999) {
+          this.wash.mix_time = 999
+        } else if (this.wash.mix_time < 1) {
+          this.wash.mix_time = 1
+        }
+        //mixspeed
+        if (this.wash.basic_labware == this.$t("language.e_sleeve")) {
+          if (this.wash.mix_speed > 10) {
+            this.wash.mix_speed = 10
+          } else if (this.wash.mix_speed < 1) {
+            this.wash.mix_speed = 1
+          }
+        } else {
+          if (this.wash.mix_speed > 150) {
+            this.wash.mix_speed = 150
+          } else if (this.wash.mix_speed < 1) {
+            this.wash.mix_speed = 1
+          }
+        }
+        //mix_segments
+        if (this.wash.mix_segments > 5) {
+          this.wash.mix_segments = 5
+        } else if (this.wash.mix_segments < 1) {
+          this.wash.mix_segments = 1
+        }
+        //every_mix_times
+        if (this.wash.every_mix_times > 999) {
+          this.wash.every_mix_times = 999
+        } else if (this.wash.every_mix_times <= 1) {
+          this.wash.every_mix_times = 1
+        }
+        //mix_moving_speed
+        if (this.wash.mix_moving_speed > 150) {
+          this.wash.mix_moving_speed = 150
+        } else if (this.wash.mix_moving_speed < 1) {
+          this.wash.mix_moving_speed = 1
+        }
+        //interval_stay_time
+        if (this.wash.interval_stay_time > 999) {
+          this.wash.interval_stay_time = 999
+        } else if (this.wash.interval_stay_time < 1) {
+          this.wash.interval_stay_time = 1
+        }
+        // cycle
+        if (this.wash.cycle > 99) {
+          this.wash.cycle = 99
+        } else if (this.wash.cycle < 1) {
+          this.wash.cycle = 1
+        }
+        //magnetic_speed
+        if (this.wash.magnetic_speed > 150) {
+          this.wash.magnetic_speed = 150
+        } else if (this.wash.magnetic_speed < 1) {
+          this.wash.magnetic_speed = 1
+        }
+        //drying_time
+        if (this.wash.drying_time > 999) {
+          this.wash.drying_time = 999
+        } else if (this.wash.drying_time <= 1) {
+          this.wash.drying_time = 1
+        }
+        //every_magnetic_times
+        if (this.wash.every_magnetic_times > 99) {
+          this.wash.every_magnetic_times = 99
+        } else if (this.wash.every_magnetic_times < 1) {
+          this.wash.every_magnetic_times = 1
+        }
+        //liquid_level_magnetic_times
+        if (this.wash.liquid_level_magnetic_times > 99) {
+          this.wash.liquid_level_magnetic_times = 99
+        } else if (this.wash.liquid_level_magnetic_times <= 0) {
+          this.wash.liquid_level_magnetic_times = 0
+        }
+        // pre_heating_seconds
+        if (this.wash.pre_heating_seconds > 999) {
+          this.wash.pre_heating_seconds = 999
+        } else if (this.wash.pre_heating_seconds <= 1) {
+          this.wash.pre_heating_seconds = 1
+        }
+        //temperature
+        if (this.wash.temperature > 120.0) {
+          this.wash.temperature = '120.0'
+        } else if (this.wash.temperature < 37.0) {
+          this.wash.temperature = '37.0'
+        } else {
+          this.wash.temperature = Number(this.wash.temperature).toFixed(1)
+        }
+        //lowest_magnetic_position
+        if (this.wash.lowest_magnetic_position > 20) {
+          this.wash.lowest_magnetic_position = 20
+        } else if (this.wash.lowest_magnetic_position <= 0) {
+          this.wash.lowest_magnetic_position = 0
+        }
+        //drying_speed
+        if (this.wash.drying_speed > 10) {
+          this.wash.drying_speed = 10
+        } else if (this.wash.drying_speed < 1) {
+          this.wash.drying_speed = 1
+        }
+        //mix_position
+        if (this.wash.mix_position > 20) {
+          this.wash.mix_position = 20
+        } else if (this.wash.mix_position <= 0) {
+          this.wash.mix_position = 0
+        }
+        //aspirate_speed
+        if (this.wash.aspirate_speed > 150) {
+          this.wash.aspirate_speed = 150
+        } else if (this.wash.aspirate_speed <= 1) {
+          this.wash.aspirate_speed = 1
+        }
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        this.wash.temperature_on = this.temperature_on ? 1 : 0
+        this.wash.magnet_on = this.magnet_on ? 1 : 0
+        protocol.steps[this.order - 1] = JSON.parse(JSON.stringify(this.wash))
+        protocol.steps[this.order - 1].drying_on = protocol.steps[this.order - 1].drying_on ? 1 : 0
+        if (this.wash.basic_labware == this.$t("language.d_tip")) {
+          protocol.steps[this.order - 1].basic_labware = 0
+        } else if (this.wash.basic_labware == this.$t("language.e_tip")) {
+          protocol.steps[this.order - 1].basic_labware = 1
+        } else if (this.wash.basic_labware == this.$t("language.e_sleeve")) {
+          protocol.steps[this.order - 1].basic_labware = 2
+        }
+        if (this.wash.magnet_labware == this.$t("language.d_tip")) {
+          protocol.steps[this.order - 1].magnet_labware = 0
+        } else if (this.wash.magnet_labware == this.$t("language.e_tip")) {
+          protocol.steps[this.order - 1].magnet_labware = 1
+        } else if (this.wash.magnet_labware == this.$t("language.e_sleeve")) {
+          protocol.steps[this.order - 1].magnet_labware = 2
+        }
+        if (this.wash.mix_type == this.$t("language.top_bottom")) {
+          protocol.steps[this.order - 1].mix_type = 0
+        } else if (this.wash.mix_type == this.$t("language.bottom_top")) {
+          protocol.steps[this.order - 1].mix_type = 1
+        }
+        if (this.wash.drying_position == this.$t("language.tube_inside")) {
+          protocol.steps[this.order - 1].drying_position = 0
+        } else if (this.wash.drying_position == this.$t("language.tube_outside")) {
+          protocol.steps[this.order - 1].drying_position = 1
+        }
+        this.$store.commit('setProtocol', protocol)
+        this.$emit('changeName')
+        this.isShowKeyboard = this.isShowNumberKeyboard = this.isShowNumberKeyboardPoint = false;
+        this.onchangeCount = 0
+      },
+      showWarning(type) {
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        this.wash.pre_heating = type
+        protocol.steps[this.order - 1].pre_heating = type
+        this.$store.commit('setProtocol', protocol)
+      },
+      changeCool(type) {
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        this.wash.pre_cooling = type
+        protocol.steps[this.order - 1].pre_cooling = type
+        this.$store.commit('setProtocol', protocol)
+      },
+      selectMagnet(type) {
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        this.wash.magnet_type = type
+        this.magnet_type = type
+        protocol.steps[this.order - 1].magnet_type = type
+        this.$store.commit('setProtocol', protocol)
+      },
+      selectSegments(type) {
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        this.wash.segments = type
+        protocol.steps[this.order - 1].segments = type
+        this.$store.commit('setProtocol', protocol)
+        this.segments_status = false
+      },
+      selectMixSegments(type) {
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        this.wash.mix_segments = type
+        protocol.steps[this.order - 1].mix_segments = type
+        this.$store.commit('setProtocol', protocol)
+      },
+      is_magnet() {
+        this.magnet_status = !this.magnet_status
+        this.arraw_status = false;
+        this.segments_status = false;
+        this.arraw_first_status = false
+        this.mix_segments_status = false
+        this.magnet_labware_status = false
+        this.mix_status = false
+      },
+      is_Segment() {
+        this.segments_status = !this.segments_status
+        this.arraw_status = false;
+        this.magnet_status = false;
+        this.arraw_first_status = false
+        this.mix_segments_status = false
+        this.magnet_labware_status = false
+        this.mix_status = false
+      },
+      isMixSegment() {
+        this.mix_segments_status = !this.mix_segments_status
+        this.arraw_status = false;
+        this.segments_status = false;
+        this.magnet_status = false;
+        this.arraw_first_status = false
+        this.magnet_labware_status = false
+        this.mix_status = false
+      },
+      selectHeatStatus() {
+        this.heat_stauts = !this.heat_stauts
+        if (this.heat_stauts == false) {
+          this.wash.pre_heating_seconds = 0
+        }
+      },
+      selectlabware(type) {
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        if (type == 0) {
+          this.wash.basic_labware = this.$t("language.d_tip")
+        } else if (type == 1) {
+          this.wash.basic_labware = this.$t("language.e_tip")
+        } else if (type == 2) {
+          this.wash.basic_labware = this.$t("language.e_sleeve")
+        }
+        protocol.steps[this.order - 1].basic_labware = type
+        this.$store.commit('setProtocol', protocol)
+        this.arraw_first_status = false
+      },
+      selectMagnetlabware(type) {
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        if (type == 0) {
+          this.wash.magnet_labware = this.$t("language.d_tip")
+        } else if (type == 1) {
+          this.wash.magnet_labware = this.$t("language.e_tip")
+        } else if (type == 2) {
+          this.wash.magnet_labware = this.$t("language.e_sleeve")
+        }
+        protocol.steps[this.order - 1].magnet_labware = type
+        this.$store.commit('setProtocol', protocol)
+        this.magnet_labware_status = false
+      },
+      is_arraw_first() {
+        this.arraw_first_status = !this.arraw_first_status
+        this.arraw_status = false
+        this.segments_status = false;
+        this.magnet_status = false;
+        this.mix_segments_status = false
+        this.magnet_labware_status = false
+        this.mix_status = false
+      },
+      getTempStatus() {
+        if (this.$store.getters.protocol.cartridge == 2) {
+          if (this.wash.well == 1 || this.wash.well == 2 || this.wash.well == 12) {
+            return true
+          }
+        } else if (this.$store.getters.protocol.cartridge == 8) {
+          if (this.wash.well == 1 || this.wash.well == 10) {
+            return true
+          }
+        } else if (this.$store.getters.protocol.cartridge == 15) {
+          if (this.wash.well == 1 || this.wash.well == 8) {
+            return true
+          }
+        } else {
+          return false
+        }
+      },
+      isMagnetLabware() {
+        this.magnet_labware_status = !this.magnet_labware_status
+        this.arraw_first_status = false
+        this.arraw_status = false
+        this.segments_status = false;
+        this.magnet_status = false;
+        this.mix_segments_status = false
+        this.mix_status = false
+      },
+      isMixType() {
+        this.mix_status = !this.mix_status
+        this.magnet_labware_status = false
+        this.arraw_first_status = false
+        this.arraw_status = false
+        this.segments_status = false
+        this.magnet_status = false
+        this.mix_segments_status = false
+      },
+      selectMixType(type) {
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        if (type == 0) {
+          this.wash.mix_type = this.$t("language.top_bottom")
+        } else if (type == 1) {
+          this.wash.mix_type = this.$t("language.bottom_top")
+        }
+        protocol.steps[this.order - 1].mix_type = type
+        this.$store.commit('setProtocol', protocol)
+        this.mix_status = false
+      },
+      isDryPosition() {
+        this.position_status = !this.position_status
+        this.mix_status = false
+        this.magnet_labware_status = false
+        this.arraw_first_status = false
+        this.arraw_status = false
+        this.segments_status = false
+        this.magnet_status = false
+        this.mix_segments_status = false
+      },
+      selectDryPosition(type) {
+        var protocol = JSON.parse(JSON.stringify(this.$store.getters.protocol))
+        if (type == 0) {
+          this.wash.drying_position = this.$t("language.tube_inside")
+        } else if (type == 1) {
+          this.wash.drying_position = this.$t("language.tube_outside")
+        }
+        protocol.steps[this.order - 1].drying_position = type
+        this.$store.commit('setProtocol', protocol)
+        this.position_status = false
+      }
+    },
+    destroyed() {
+      document.removeEventListener('click', this.closeClick);
+    }
+  }
+</script>
+
+<style scoped="scoped">
+  .searchKeyboard {
+    left: 600px !important;
+    bottom: 40px !important;
+    width: 1270px !important;
+    transform: scaleY(0.95);
+  }
+
+  .keyBoard>>>li.hg-candidate-box-list-item {
+    width: 54px !important;
+  }
+
+  .searchKeyboardNumber {
+    left: 800px !important;
+    bottom: -20px !important;
+    transform: scale(0.78);
+  }
+
+  .move-top {
+    height: 530px !important;
+
+  }
+
+  .hidden {
+    overflow: hidden;
+  }
+
+  .model {
+    font-size: 24px;
+    margin-left: 37px;
+    margin-top: 26px;
+    /* background-color: red; */
+    height: 952px;
+    overflow-y: auto;
+  }
+
+  .step-name {
+    position: relative;
+    width: 100%;
+    height: 54px;
+    line-height: 54px;
+    margin-bottom: 25px;
+  }
+
+  .input-step-name {
+    position: absolute;
+    width: 310px;
+    height: 54px;
+    left: 513px;
+    text-align: center;
+    background-color: #ffffff;
+    border-radius: 2px;
+    box-sizing: border-box;
+    border: solid 1px #c2cbda;
+  }
+
+  .select-well {
+    position: absolute;
+    width: 310px;
+    height: 54px;
+    left: 513px;
+    text-align: center;
+    background-color: #ffffff;
+    border-radius: 2px;
+    border: solid 1px #c2cbda;
+    box-sizing: border-box;
+    top: 0;
+  }
+
+  .arraw-well {
+    position: absolute;
+    /* margin-left: 269px; */
+    top: 35%;
+    right: 12px;
+  }
+
+  .select-list {
+    position: absolute;
+    z-index: 1000;
+    background-color: #ffffff;
+    height: 216px;
+    overflow-y: auto;
+    width: 310px;
+    border: solid 2px #c2cbda;
+    box-sizing: border-box;
+    border-top: none;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+    margin-left: 513px;
+  }
+
+  .select-list-magnet {
+    position: absolute;
+    z-index: 1000;
+    background-color: #ffffff;
+    height: 108px;
+    width: 310px;
+    border: solid 2px #c2cbda;
+    box-sizing: border-box;
+    border-top: none;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+    margin-left: 513px;
+  }
+
+  .select-list-segments {
+    position: absolute;
+    z-index: 1000;
+    background-color: #ffffff;
+    height: 270px;
+    width: 310px;
+    border: solid 2px #c2cbda;
+    box-sizing: border-box;
+    border-top: none;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+    margin-left: 513px;
+  }
+
+  .select-mix-type {
+    position: absolute;
+    z-index: 1000;
+    background-color: #ffffff;
+    height: 109px;
+    width: 310px;
+    border: solid 2px #c2cbda;
+    box-sizing: border-box;
+    border-top: none;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+    margin-left: 513px;
+  }
+
+  .arrawclass {
+    border-top: 2px solid #c2cbda;
+    text-align: center;
+  }
+
+  .switch {
+    position: absolute;
+    left: 513px;
+  }
+
+  .heating-step {
+    position: absolute;
+    width: 500px;
+    height: 54px;
+    left: 513px;
+    display: flex;
+    align-items: center;
+    top: 0;
+  }
+
+  .circle {
+    width: 30px;
+    height: 30px;
+    background-color: #ffffff;
+    border: solid 1px #5691d3;
+    border-radius: 15px;
+    margin-right: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .circle-text {
+    margin-right: 60px;
+  }
+
+  .circle-inner {
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    background-color: #ffffff;
+  }
+
+  .selected-heating {
+    background-color: #5691D3;
+  }
+
+  .warning {
+    position: relative;
+    width: 100%;
+    height: 40px;
+    line-height: 40px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    color: #666666;
+  }
+
+  .warning-div {
+    width: 28px;
+    height: 28px;
+    background-color: #ffffff;
+    border-radius: 2px;
+    border: solid 1px #5a89c7;
+    margin-right: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .warning-input {
+    width: 170px;
+    height: 40px;
+    background-color: #ffffff;
+    border-radius: 2px;
+    border: solid 1px #c2cbda;
+    position: absolute;
+    left: 513px;
+    text-indent: 22px;
+  }
+
+  .img-ok {
+    transform: scale(0.6);
+  }
+
+  .expect-div {
+    position: absolute;
+    width: 310px;
+    height: 54px;
+    background-color: #e1e1e1;
+    border-radius: 2px;
+    border: solid 1px #c2cbda;
+    left: 513px;
+    text-align: center;
+    top: 0;
+  }
+
+  .select-first {
+    position: absolute;
+    z-index: 1000;
+    background-color: #ffffff;
+    height: 108px;
+    width: 311px;
+    border: solid 2px #c2cbda;
+    box-sizing: border-box;
+    border-top: none;
+    overflow-y: auto;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+    left: 513px;
+  }
+</style>
+<style>
+  .step-name .el-switch__core {
+    height: 30px;
+    border-radius: 21px;
+  }
+
+  .step-name .el-switch__core:after {
+    height: 28px;
+    width: 29px;
+    top: 0;
+  }
+
+  .step-name .is-checked .el-switch__core:after {
+    height: 28px;
+    width: 29px;
+    top: 0;
+    -webkit-transform: translateX(-11px);
+  }
+
+  .model,
+  .model div,
+  .select-list,
+  .select-list div,
+  .select-first,
+  .select-first div {
+    touch-action: pan-y !important;
+  }
+</style>
